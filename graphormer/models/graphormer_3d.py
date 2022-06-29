@@ -310,13 +310,15 @@ class Graphormer3D(BaseFairseqModel):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.atom_types = 64
         self.edge_types = 64 * 64
+
+        # embed atom types
+        self.atom_types = 64
         self.atom_encoder = nn.Embedding(
             self.atom_types, self.args.embed_dim, padding_idx=0
         )
         self.tag_encoder = nn.Embedding(3, self.args.embed_dim)
-        self.input_dropout = self.args.input_dropout
+        self.input_dropout = self.args.input_dropout    # dropout prob
         self.layers = nn.ModuleList(
             [
                 Graphormer3DEncoderLayer(
@@ -367,6 +369,8 @@ class Graphormer3D(BaseFairseqModel):
         )
 
         gbf_feature = self.gbf(dist, edge_type)
+
+        # Centrality encoding
         edge_features = gbf_feature.masked_fill(
             padding_mask.unsqueeze(1).unsqueeze(-1), 0.0
         )
@@ -378,19 +382,16 @@ class Graphormer3D(BaseFairseqModel):
         )
 
         # ===== MAIN MODEL =====
-        output = F.dropout(
-            graph_node_feature, p=self.input_dropout, training=self.training
-        )
+        output = F.dropout(graph_node_feature, p=self.input_dropout, training=self.training)
         output = output.transpose(0, 1).contiguous()
 
+        # spatial encoding
         graph_attn_bias = self.bias_proj(gbf_feature).permute(0, 3, 1, 2).contiguous()
-        graph_attn_bias.masked_fill_(
-            padding_mask.unsqueeze(1).unsqueeze(2), float("-inf")
-        )
+        graph_attn_bias.masked_fill_(padding_mask.unsqueeze(1).unsqueeze(2), float("-inf"))
 
         graph_attn_bias = graph_attn_bias.view(-1, n_node, n_node)
         for _ in range(self.args.blocks):
-            for enc_layer in self.layers:
+            for enc_layer in self.layers:   # loop over all encoder layers
                 output = enc_layer(output, attn_bias=graph_attn_bias)
 
         output = self.final_ln(output)

@@ -23,6 +23,29 @@ from fairseq.tasks import FairseqTask, register_task
 from ..data.dataset import EpochShuffleDataset
 
 class LMDBDataset:
+    """
+    Input dataset
+
+    pos:
+    tensor([[ 0.0000,  0.0000, 13.0000],
+            [ 2.5527,  0.0000, 13.0000],
+            [ 0.0000,  2.5527, 13.0000],
+            [ 2.5527,  2.5527, 13.0000],
+            [ 1.2763,  1.2763, 14.8050],
+            [ 3.8290,  1.2763, 14.8050],
+            [ 1.2763,  3.8290, 14.8050],
+            [ 3.8290,  3.8290, 14.8050],
+            [ 0.0000,  0.0000, 16.6100],
+            [ 2.5527,  0.0000, 16.6100],
+            [ 0.0000,  2.5527, 16.6100],
+            [ 2.5527,  2.5527, 16.6100],
+            [ 2.5527,  2.5527, 19.6100],
+            [ 2.5527,  2.5527, 18.4597]])
+    atom: tensor size [N]
+        atomic_numbers indicate atom type
+    cell: tensor size [1, 3, 3]
+        three lattice vectors 
+    """
     def __init__(self, db_path):
         super().__init__()
         assert Path(db_path).exists(), f"{db_path}: No such file or directory"
